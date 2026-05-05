@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>合成大芳芳遊戲BigBigJennyGame</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        #container {
+			background: white;
+			border-radius: 20px;
+			padding: 10px;
+			box-shadow: 0 10px 50px rgba(0,0,0,0.3);
+			text-align: center;
+			width: 100%;
+			max-width: 480px;   /* fits most phones */
+			box-sizing: border-box;
+		}
+        #score {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        canvas {
+			border: 3px solid #333;
+			border-radius: 10px;
+			background: #fffef0;
+			display: block;
+			margin: 0 auto;
+			cursor: crosshair;
+			width: 100%;       /* scale to container width */
+			height: auto;      /* keep aspect ratio 400:600 */
+		}
+        #next {
+            margin-top: 10px;
+            font-size: 16px;
+            color: #666;
+        }
+        #info {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #888;
+        }
+		@media (max-width: 480px) {
+			#score {
+				font-size: 18px;
+			}
+			#next {
+				font-size: 14px;
+			}
+			#info {
+				font-size: 12px;
+			}
+		}
+        #gameOverDiv {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.95);
+            color: white;
+            padding: 40px 60px;
+            border-radius: 15px;
+            text-align: center;
+            z-index: 1000;
+        }
+        #gameOverDiv h2 {
+            font-size: 36px;
+            margin: 0 0 20px 0;
+        }
+        #gameOverDiv p {
+            font-size: 20px;
+            margin: 10px 0;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        
+    </style>
+</head>
+<body>
+    <div id="container">
+		<!-- 遊戲區域 -->
+		<div id="gameSection">
+			<div id="score">分數: <span id="scoreValue">0</span></div>
+			<canvas id="canvas" width="400" height="600"></canvas>
+			<div id="next">下一個: Level <span id="nextFruit">1</span></div>
+			<div id="info">點擊投放Jenny</div>
+		</div>
+	</div>
+			
+	<!-- Background Music -->
+	<audio id="bgMusic" loop preload="auto">
+		<source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" type="audio/mpeg">
+	</audio>
+
+	<!-- Mobile Audio Activation Overlay - MOVED OUTSIDE container -->
+	<div id="mobileStartOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; justify-content: center; align-items: center; flex-direction: column;">
+		<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px; border-radius: 30px; text-align: center; color: white; max-width: 300px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);">
+			<div style="font-size: 64px; margin-bottom: 20px;">🎵</div>
+			<h2 style="margin: 0 0 10px 0;">Enable Sound</h2>
+			<p style="margin: 0 0 20px 0; font-size: 14px; opacity: 0.9;">Tap anywhere to enable background music & sound effects</p>
+			<button id="enableMusicBtn" style="background: #4CAF50; color: white; border: none; padding: 12px 30px; font-size: 18px; border-radius: 50px; cursor: pointer; font-weight: bold;">▶ Enable Audio</button>
+			<p style="margin-top: 20px; font-size: 12px; opacity: 0.7;">🔊 You only need to do this once</p>
+		</div>
+	</div>
+	
+    <div id="gameOverDiv">
+        <h2>遊戲結束!</h2>
+        <p>最終分數: <span id="finalScore">0</span></p>
+        <button onclick="restart()">重新開始</button>
+    </div>
+
+    <script>
+        var canvas = document.getElementById('canvas');
+        var ctx = canvas.getContext('2d');
+        
+        // 圖片配置
+        var fruits = [
+			{ size: 20, color: '#ff6b6b', name: 'Level 1', score: 1, image: null },    // was 20
+			{ size: 24, color: '#ee5a6f', name: 'Level 2', score: 3, image: null },    // was 30
+			{ size: 32, color: '#c44569', name: 'Level 3', score: 6, image: null },    // was 40
+			{ size: 40, color: '#f39c12', name: 'Level 4', score: 10, image: null },   // was 50
+			{ size: 48, color: '#e67e22', name: 'Level 5', score: 15, image: null },   // was 60
+			{ size: 56, color: '#d35400', name: 'Level 6', score: 21, image: null },   // was 70
+			{ size: 68, color: '#e74c3c', name: 'Level 7', score: 28, image: null },   // was 85
+			{ size: 80, color: '#c0392b', name: 'Level 8', score: 36, image: null },   // was 100
+			{ size: 96, color: '#f39c12', name: 'Level 9', score: 45, image: null },   // was 120
+			{ size: 112, color: '#27ae60', name: 'Level 10', score: 55, image: null }, // was 140
+			{ size: 128, color: '#16a085', name: 'Level 11', score: 66, image: null }, // was 160
+			{ size: 144, color: '#8e44ad', name: 'Level 12', score: 78, image: null }  // was 180
+		];
+
+		var imageUrls = [
+			"https://i.ibb.co/CsmqG8V9/1.jpg",
+			"https://i.ibb.co/nqW4SNXz/2.jpg",
+			"https://i.ibb.co/dsxmJcpy/3.jpg",
+			"https://i.ibb.co/4RvHrjtb/4.jpg",
+			"https://i.ibb.co/Cp7pw0LB/5.jpg",
+			"https://i.ibb.co/RGLdP570/6.jpg",
+			"https://i.ibb.co/Dq1LnDR/7.jpg",
+			"https://i.ibb.co/7xfFRpzC/8.jpg",
+			"https://i.ibb.co/kVGz9K8h/9.jpg",
+			"https://i.ibb.co/gLTWRcwy/10.jpg",
+			"https://i.ibb.co/BHHgPnsR/11.jpg",
+			"https://i.ibb.co/LD8Kvdz2/12.jpg"
+		];
+
+		function loadDefaultImages() {
+			for (var i = 0; i < fruits.length; i++) {
+				var img = new Image();
+				img.src = imageUrls[i];
+				fruits[i].image = img;
+			}
+		}
+
+        var score = 0;
+        var balls = [];
+        var nextType = Math.floor(Math.random() * 6);
+        var gameOver = false;
+        var mouseX = 200;
+        var canDrop = true;
+        var GRAVITY = 0.5;
+        var BOUNCE = 0.4;
+        var FRICTION = 0.99;
+        var LINE_Y = 140;
+		// Music control variables
+		var bgMusic = null;
+		var musicStarted = false;
+		// Shared AudioContext for both music and effects
+		var sharedAudioCtx = null;
+
+		function getAudioContext() {
+			if (!sharedAudioCtx) {
+				sharedAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+			}
+			return sharedAudioCtx;
+		}
+        
+		// Sound effect function for explosion when merging
+		function playExplosionSound() {
+			try {
+				var audioCtx = getAudioContext();
+				
+				// Create noise buffer for realistic explosion
+				var bufferSize = 4096;
+				var noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+				var output = noiseBuffer.getChannelData(0);
+				
+				// Generate white noise
+				for (var i = 0; i < bufferSize; i++) {
+					output[i] = Math.random() * 2 - 1;
+				}
+				
+				var noise = audioCtx.createBufferSource();
+				noise.buffer = noiseBuffer;
+				
+				var gainNode = audioCtx.createGain();
+				
+				noise.connect(gainNode);
+				gainNode.connect(audioCtx.destination);
+				
+				// Rapid volume decay for explosion effect
+				gainNode.gain.setValueAtTime(0.7, audioCtx.currentTime);
+				gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.5);
+				
+				noise.start();
+				noise.stop(audioCtx.currentTime + 0.5);
+				
+				if (audioCtx.state === 'suspended') {
+					audioCtx.resume();
+				}
+			} catch(e) {
+				console.log("Sound not supported:", e);
+			}
+		}
+
+		// Initialize background music
+		function initBackgroundMusic() {
+			bgMusic = document.getElementById('bgMusic');
+			if (bgMusic) {
+				bgMusic.volume = 0.5; // Set volume to 50% (adjust as needed)
+				bgMusic.loop = true;
+			}
+		}
+
+		// Mobile music activation - shows overlay on mobile devices
+		function setupMobileMusic() {
+			// Check if user is on mobile device
+			var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+			
+			console.log("Device detected - isMobile:", isMobile);
+			
+			if (isMobile) {
+				var overlay = document.getElementById('mobileStartOverlay');
+				var enableBtn = document.getElementById('enableMusicBtn');
+				
+				if (!overlay) {
+					console.log("Overlay not found");
+					return;
+				}
+				
+				// Show the overlay immediately on mobile
+				overlay.style.display = 'flex';
+				console.log("Mobile overlay shown");
+				
+				// Function to enable audio
+				function enableAudio() {
+					console.log("Enable audio triggered");
+					
+					// Resume AudioContext
+					if (sharedAudioCtx && sharedAudioCtx.state === 'suspended') {
+						sharedAudioCtx.resume().then(function() {
+							console.log("AudioContext resumed successfully");
+						}).catch(function(e) {
+							console.log("AudioContext resume failed:", e);
+						});
+					}
+					
+					// Start background music
+					if (bgMusic && !musicStarted) {
+						bgMusic.play().then(function() {
+							console.log("Background music started on mobile");
+							musicStarted = true;
+						}).catch(function(e) {
+							console.log("Failed to start music:", e);
+						});
+					}
+					
+					// Hide the overlay
+					overlay.style.display = 'none';
+				}
+				
+				// Add click/tap listeners
+				if (enableBtn) {
+					enableBtn.addEventListener('click', enableAudio);
+					console.log("Button listener added");
+				}
+				
+				// Also enable when tapping anywhere on overlay
+				overlay.addEventListener('click', function(e) {
+					// Don't trigger twice if button was clicked
+					if (e.target === enableBtn) {
+						return;
+					}
+					enableAudio();
+				});
+				
+				// Optional: Also try to enable on first canvas tap (fallback)
+				canvas.addEventListener('touchstart', function enableOnFirstTouch() {
+					if (!musicStarted && overlay.style.display === 'flex') {
+						enableAudio();
+					}
+					canvas.removeEventListener('touchstart', enableOnFirstTouch);
+				});
+			}
+		}
+
+
+		// Start background music
+		function startBackgroundMusic() {
+			if (bgMusic && !musicStarted && !gameOver) {
+				// Resume AudioContext first
+				var playPromise = null;
+				
+				if (sharedAudioCtx && sharedAudioCtx.state === 'suspended') {
+					sharedAudioCtx.resume();
+				}
+				
+				// For mobile: Play with user interaction guarantee
+				playPromise = bgMusic.play();
+				
+				if (playPromise !== undefined) {
+					playPromise.then(function() {
+						console.log("Music playing on mobile");
+						musicStarted = true;
+					}).catch(function(error) {
+						console.log("Music play failed:", error);
+						// Mobile fallback: try playing with a silent audio context
+						if (sharedAudioCtx) {
+							var silentOsc = sharedAudioCtx.createOscillator();
+							var silentGain = sharedAudioCtx.createGain();
+							silentOsc.connect(silentGain);
+							silentGain.connect(sharedAudioCtx.destination);
+							silentGain.gain.value = 0;
+							silentOsc.start();
+							silentOsc.stop(sharedAudioCtx.currentTime + 0.1);
+							
+							// Try music again
+							setTimeout(function() {
+								bgMusic.play().catch(function(e) {
+									console.log("Second attempt failed:", e);
+								});
+							}, 100);
+						}
+					});
+				}
+			}
+		}
+
+		// Stop background music
+		function stopBackgroundMusic() {
+			if (bgMusic) {
+				bgMusic.pause();
+				bgMusic.currentTime = 0;
+				musicStarted = false;
+			}
+		}
+
+        // 繪製圓形圖片的函數
+        function drawCircularImage(image, x, y, radius) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.closePath();
+            ctx.clip();
+            
+            // 繪製圖片填滿圓形區域
+            ctx.drawImage(
+                image,
+                x - radius,
+                y - radius,
+                radius * 2,
+                radius * 2
+            );
+            
+            ctx.restore();
+            
+            // 添加圓形邊框
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        
+        function updateNext() {
+            document.getElementById('nextFruit').textContent = (nextType + 1);
+        }
+
+        function createBall(x, type) {
+            return {
+                x: x,
+                y: 50,
+                vx: 0,
+                vy: 0,
+                type: type,
+                radius: fruits[type].size,
+                merged: false,
+                age: 0
+            };
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.strokeStyle = '#e74c3c';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(0, LINE_Y);
+            ctx.lineTo(canvas.width, LINE_Y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            if (canDrop && !gameOver) {
+                ctx.globalAlpha = 0.6;
+                
+                // 繪製預覽（圓形圖片或顏色）
+                if (fruits[nextType].image) {
+                    drawCircularImage(fruits[nextType].image, mouseX, 50, fruits[nextType].size);
+                } else {
+                    ctx.fillStyle = fruits[nextType].color;
+                    ctx.beginPath();
+                    ctx.arc(mouseX, 50, fruits[nextType].size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                ctx.globalAlpha = 1;
+                
+                ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([3, 3]);
+                ctx.beginPath();
+                ctx.moveTo(mouseX, 50 + fruits[nextType].size);
+                ctx.lineTo(mouseX, canvas.height);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+            
+            for (var i = 0; i < balls.length; i++) {
+                var ball = balls[i];
+                
+                // 繪製球（圓形圖片或顏色）
+                if (fruits[ball.type].image) {
+                    drawCircularImage(fruits[ball.type].image, ball.x, ball.y, ball.radius);
+                } else {
+                    ctx.fillStyle = fruits[ball.type].color;
+                    ctx.beginPath();
+                    ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = '#333';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+            }
+        }
+
+        function update() {
+            if (gameOver) return;
+
+            for (var i = 0; i < balls.length; i++) {
+                var ball = balls[i];
+                if (ball.merged) continue;
+
+                ball.age++;
+                ball.vy += GRAVITY;
+                ball.vx *= FRICTION;
+                ball.vy *= FRICTION;
+                ball.x += ball.vx;
+                ball.y += ball.vy;
+                
+                if (ball.x - ball.radius < 0) {
+                    ball.x = ball.radius;
+                    ball.vx = -ball.vx * BOUNCE;
+                }
+                if (ball.x + ball.radius > canvas.width) {
+					ball.x = canvas.width - ball.radius;
+					ball.vx = -ball.vx * BOUNCE;
+				}
+				if (ball.y + ball.radius > canvas.height) {
+					ball.y = canvas.height - ball.radius;
+					ball.vy = -ball.vy * BOUNCE;
+				}
+                
+                for (var j = i + 1; j < balls.length; j++) {
+                    var other = balls[j];
+                    if (other.merged) continue;
+                    
+                    var dx = other.x - ball.x;
+                    var dy = other.y - ball.y;
+                    var dist = Math.sqrt(dx * dx + dy * dy);
+                    var minDist = ball.radius + other.radius;
+                    
+                    if (dist < minDist) {
+                        if (ball.type === other.type && ball.type < 11) {
+							playExplosionSound(); 
+							
+                            var newType = ball.type + 1;
+                            var midX = (ball.x + other.x) / 2;
+                            var midY = (ball.y + other.y) / 2;
+                            
+                            ball.merged = true;
+                            other.merged = true;
+                            
+                            balls.push({
+                                x: midX,
+                                y: midY,
+                                vx: (ball.vx + other.vx) / 2,
+                                vy: (ball.vy + other.vy) / 2,
+                                type: newType,
+                                radius: fruits[newType].size,
+                                merged: false,
+                                age: 0
+                            });
+                            
+                            score += fruits[newType].score;
+                            document.getElementById('scoreValue').textContent = score;
+                        } else {
+                            var angle = Math.atan2(dy, dx);
+                            var sin = Math.sin(angle);
+                            var cos = Math.cos(angle);
+                            
+                            var vx1 = ball.vx * cos + ball.vy * sin;
+                            var vy1 = ball.vy * cos - ball.vx * sin;
+                            var vx2 = other.vx * cos + other.vy * sin;
+                            var vy2 = other.vy * cos - other.vx * sin;
+                            
+                            ball.vx = vx2 * cos - vy1 * sin;
+                            ball.vy = vy1 * cos + vx2 * sin;
+                            other.vx = vx1 * cos - vy2 * sin;
+                            other.vy = vy2 * cos + vx1 * sin;
+                            
+                            var overlap = minDist - dist;
+                            ball.x -= overlap * cos / 2;
+                            ball.y -= overlap * sin / 2;
+                            other.x += overlap * cos / 2;
+                            other.y += overlap * sin / 2;
+                        }
+                    }
+                }
+            }
+            
+            var newBalls = [];
+            for (var i = 0; i < balls.length; i++) {
+                if (!balls[i].merged) {
+                    newBalls.push(balls[i]);
+                }
+            }
+            balls = newBalls;
+            
+            for (var i = 0; i < balls.length; i++) {
+                var ball = balls[i];
+                var isStill = Math.abs(ball.vy) < 0.5 && Math.abs(ball.vx) < 0.5;
+                var isOld = ball.age > 180;
+                var isOverLine = ball.y - ball.radius < LINE_Y;
+                
+                if (isStill && isOld && isOverLine) {
+                    endGame();
+                    break;
+                }
+            }
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+		function updateMouseX(clientX) {
+			var rect = canvas.getBoundingClientRect();
+			
+			// Calculate scale factor (canvas actual size vs displayed size)
+			var scaleX = canvas.width / rect.width;
+			
+			// Convert screen coordinate to canvas coordinate
+			mouseX = (clientX - rect.left) * scaleX;
+			
+			// Clamp to valid range (prevent fruit from going outside edges)
+			var maxSize = fruits[nextType].size;
+			if (mouseX < maxSize) mouseX = maxSize;
+			if (mouseX > canvas.width - maxSize) mouseX = canvas.width - maxSize;
+		}
+
+		canvas.addEventListener('mousemove', function(e) {
+			if (gameOver) return;
+			updateMouseX(e.clientX);
+		});
+
+		canvas.addEventListener('touchmove', function(e) {
+			if (gameOver) return;
+			if (e.touches.length > 0) {
+				updateMouseX(e.touches[0].clientX);
+				e.preventDefault();
+			}
+		}, { passive: false });
+
+		function dropFruit() {
+			if (gameOver || !canDrop) return;
+			
+			// For mobile: Don't auto-start music if overlay is showing
+			var overlay = document.getElementById('mobileStartOverlay');
+			if (overlay && overlay.style.display === 'flex') {
+				// Don't start music yet, just drop the fruit silently
+				canDrop = false;
+				balls.push(createBall(mouseX, nextType));
+				nextType = Math.floor(Math.random() * 6);
+				updateNext();
+				setTimeout(function() {
+					canDrop = true;
+				}, 500);
+				return;  // Exit early, don't start music
+			}
+			
+			// Start music on first drop (for desktop and after mobile overlay is dismissed)
+			if (!musicStarted) {
+				startBackgroundMusic();
+			}
+			
+			canDrop = false;
+			balls.push(createBall(mouseX, nextType));
+			nextType = Math.floor(Math.random() * 6);
+			updateNext();
+			setTimeout(function() {
+				canDrop = true;
+			}, 500);
+		}
+
+		canvas.addEventListener('click', function() {
+			dropFruit();
+		});
+
+		canvas.addEventListener('touchstart', function(e) {
+			if (e.touches.length > 0) {
+				updateMouseX(e.touches[0].clientX);
+			}
+					
+			dropFruit();
+			e.preventDefault();
+		}, { passive: false });
+
+        function endGame() {
+			if (gameOver) return;
+			gameOver = true;
+			document.getElementById('finalScore').textContent = score;
+			document.getElementById('gameOverDiv').style.display = 'block';
+			
+			// Stop background music when game over
+			stopBackgroundMusic();
+		}
+
+        function restart() {
+			score = 0;
+			balls = [];
+			gameOver = false;
+			canDrop = true;
+			nextType = Math.floor(Math.random() * 6);
+			document.getElementById('scoreValue').textContent = '0';
+			document.getElementById('gameOverDiv').style.display = 'none';
+			updateNext();
+			
+			// Restart background music
+			stopBackgroundMusic();
+			startBackgroundMusic();
+		}
+		
+		window.onload = function() {
+			loadDefaultImages();
+			updateNext();
+			gameLoop();
+			initBackgroundMusic();  // Initialize music
+			setupMobileMusic();     // ADD THIS LINE - Setup mobile overlay
+		};
+	</script>
+</body>
+</html>
+
