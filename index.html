@@ -112,7 +112,7 @@
 			
 	<!-- Background Music -->
 	<audio id="bgMusic" loop preload="auto">
-		<source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" type="audio/mpeg">
+		<source src="" type="audio/mpeg">
 	</audio>
 
 	<!-- Mobile Audio Activation Overlay - MOVED OUTSIDE container -->
@@ -140,16 +140,16 @@
         var fruits = [
 			{ size: 20, color: '#ff6b6b', name: 'Level 1', score: 1, image: null },    // was 20
 			{ size: 24, color: '#ee5a6f', name: 'Level 2', score: 3, image: null },    // was 30
-			{ size: 32, color: '#c44569', name: 'Level 3', score: 6, image: null },    // was 40
-			{ size: 40, color: '#f39c12', name: 'Level 4', score: 10, image: null },   // was 50
-			{ size: 48, color: '#e67e22', name: 'Level 5', score: 15, image: null },   // was 60
-			{ size: 56, color: '#d35400', name: 'Level 6', score: 21, image: null },   // was 70
-			{ size: 68, color: '#e74c3c', name: 'Level 7', score: 28, image: null },   // was 85
-			{ size: 80, color: '#c0392b', name: 'Level 8', score: 36, image: null },   // was 100
-			{ size: 96, color: '#f39c12', name: 'Level 9', score: 45, image: null },   // was 120
-			{ size: 112, color: '#27ae60', name: 'Level 10', score: 55, image: null }, // was 140
-			{ size: 128, color: '#16a085', name: 'Level 11', score: 66, image: null }, // was 160
-			{ size: 144, color: '#8e44ad', name: 'Level 12', score: 78, image: null }  // was 180
+			{ size: 30, color: '#c44569', name: 'Level 3', score: 6, image: null },    // was 40
+			{ size: 36, color: '#f39c12', name: 'Level 4', score: 10, image: null },   // was 50
+			{ size: 42, color: '#e67e22', name: 'Level 5', score: 15, image: null },   // was 60
+			{ size: 48, color: '#d35400', name: 'Level 6', score: 21, image: null },   // was 70
+			{ size: 54, color: '#e74c3c', name: 'Level 7', score: 28, image: null },   // was 85
+			{ size: 64, color: '#c0392b', name: 'Level 8', score: 36, image: null },   // was 100
+			{ size: 74, color: '#f39c12', name: 'Level 9', score: 45, image: null },   // was 120
+			{ size: 84, color: '#27ae60', name: 'Level 10', score: 55, image: null }, // was 140
+			{ size: 94, color: '#16a085', name: 'Level 11', score: 66, image: null }, // was 160
+			{ size: 110, color: '#8e44ad', name: 'Level 12', score: 78, image: null }  // was 180
 		];
 
 		var imageUrls = [
@@ -177,14 +177,14 @@
 
         var score = 0;
         var balls = [];
-        var nextType = Math.floor(Math.random() * 6);
+        var nextType = Math.floor(Math.random() * 9);
         var gameOver = false;
         var mouseX = 200;
         var canDrop = true;
         var GRAVITY = 0.5;
         var BOUNCE = 0.4;
         var FRICTION = 0.99;
-        var LINE_Y = 140;
+        var LINE_Y = 70;
 		// Music control variables
 		var bgMusic = null;
 		var musicStarted = false;
@@ -617,7 +617,7 @@
 				// Don't start music yet, just drop the fruit silently
 				canDrop = false;
 				balls.push(createBall(mouseX, nextType));
-				nextType = Math.floor(Math.random() * 6);
+				nextType = Math.floor(Math.random() * 9);
 				updateNext();
 				setTimeout(function() {
 					canDrop = true;
@@ -632,7 +632,7 @@
 			
 			canDrop = false;
 			balls.push(createBall(mouseX, nextType));
-			nextType = Math.floor(Math.random() * 6);
+			nextType = Math.floor(Math.random() * 9);
 			updateNext();
 			setTimeout(function() {
 				canDrop = true;
@@ -667,7 +667,7 @@
 			balls = [];
 			gameOver = false;
 			canDrop = true;
-			nextType = Math.floor(Math.random() * 6);
+			nextType = Math.floor(Math.random() * 9);
 			document.getElementById('scoreValue').textContent = '0';
 			document.getElementById('gameOverDiv').style.display = 'none';
 			updateNext();
