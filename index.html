@@ -149,7 +149,7 @@
 			{ size: 74, color: '#f39c12', name: 'Level 9', score: 45, image: null },   // was 120
 			{ size: 84, color: '#27ae60', name: 'Level 10', score: 55, image: null }, // was 140
 			{ size: 94, color: '#16a085', name: 'Level 11', score: 66, image: null }, // was 160
-			{ size: 110, color: '#8e44ad', name: 'Level 12', score: 78, image: null }  // was 180
+			{ size: 106, color: '#8e44ad', name: 'Level 12', score: 78, image: null }  // was 180
 		];
 
 		var imageUrls = [
@@ -201,40 +201,42 @@
 		// Sound effect function for explosion when merging
 		function playExplosionSound() {
 			try {
-				var audioCtx = getAudioContext();
-				
-				// Create noise buffer for realistic explosion
-				var bufferSize = 4096;
-				var noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-				var output = noiseBuffer.getChannelData(0);
-				
-				// Generate white noise
-				for (var i = 0; i < bufferSize; i++) {
-					output[i] = Math.random() * 2 - 1;
-				}
-				
-				var noise = audioCtx.createBufferSource();
-				noise.buffer = noiseBuffer;
-				
-				var gainNode = audioCtx.createGain();
-				
-				noise.connect(gainNode);
-				gainNode.connect(audioCtx.destination);
-				
-				// Rapid volume decay for explosion effect
-				gainNode.gain.setValueAtTime(0.7, audioCtx.currentTime);
-				gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.5);
-				
-				noise.start();
-				noise.stop(audioCtx.currentTime + 0.5);
-				
-				if (audioCtx.state === 'suspended') {
-					audioCtx.resume();
-				}
-			} catch(e) {
-				console.log("Sound not supported:", e);
+			var audioCtx = getAudioContext();
+
+			// Create noise buffer for realistic explosion
+			var bufferSize = 4096;
+			var noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+			var output = noiseBuffer.getChannelData(0);
+
+			// Generate white noise
+			for (var i = 0; i < bufferSize; i++) {
+			output[i] = Math.random() * 2 - 1;
 			}
-		}
+
+			var noise = audioCtx.createBufferSource();
+			noise.buffer = noiseBuffer;
+
+			var gainNode = audioCtx.createGain();
+
+			noise.connect(gainNode);
+			gainNode.connect(audioCtx.destination);
+
+			// Rapid volume decay for explosion effect
+			gainNode.gain.setValueAtTime(0.7, audioCtx.currentTime);
+			gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.5);
+
+			noise.start();
+			noise.stop(audioCtx.currentTime + 0.5);
+
+			if (audioCtx.state === 'suspended') {
+			audioCtx.resume();
+			}
+			} catch(e) {
+			console.log("Sound not supported:", e);
+			}
+			}
+
+
 
 		// Initialize background music
 		function initBackgroundMusic() {
